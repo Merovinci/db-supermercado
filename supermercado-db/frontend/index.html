@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Supermercado Bom Dia – Sistema de Vendas</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#1e293b;--mut:#64748b;--ac:#0b4f8a;--acx:#fff;--bd:#d6dee8;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--sel:#e8f1fa;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#131c2e;--tx:#e2e8f0;--mut:#94a3b8;--ac:#4a9eed;--acx:#06121f;--bd:#26344d;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--sel:#1a2a45;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1220;--card:#131c2e;--tx:#e2e8f0;--mut:#94a3b8;--ac:#4a9eed;--acx:#06121f;--bd:#26344d;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--sel:#1a2a45;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+h1{font-size:20px;margin:0}h2{font-size:15px;margin:0 0 8px}
+.sub{color:var(--mut);margin:2px 0 0;font-size:12.5px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
+select,input{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.btn{background:var(--ac);color:var(--acx);border:0;padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600;margin-top:8px}
+.btn.sec{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.n,th.n{text-align:right}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid currentColor}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mut{color:var(--mut)}
+.tot{font-size:22px;font-weight:700}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.x{background:none;border:0;color:var(--bad);cursor:pointer;font-size:15px}
+pre{margin:0;padding:10px;border-radius:8px;background:#0f172a;color:#a7f3d0;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:230px;overflow:auto;white-space:pre-wrap}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ac);color:var(--acx);padding:10px 16px;border-radius:10px;font-weight:600;display:none;max-width:90%;z-index:9}
+section.tab{display:none}section.tab.on{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>🛒 Supermercado Bom Dia</h1><p class="sub">Sistema de vendas · demonstração do banco db_supermercado</p></div>
+  <button class="btn sec" id="reset">Reiniciar dados de exemplo</button>
+</header>
+<nav id="nav">
+  <button data-t="venda" class="on">Nova venda</button><button data-t="estoque">Estoque</button>
+  <button data-t="vendas">Vendas</button><button data-t="clientes">Fidelização</button>
+</nav>
+
+<section class="tab on" id="t-venda"><div class="grid">
+  <div class="card">
+    <h2>Registrar venda</h2>
+    <div class="row">
+      <div><label>Caixa</label><select id="caixa"></select></div>
+      <div><label>Operador</label><select id="col"></select></div>
+      <div><label>Cliente (CPF)</label><select id="cli"></select></div>
+    </div>
+    <label>Produto</label><select id="prod"></select>
+    <div class="row" style="grid-template-columns:1fr 1fr auto;align-items:end">
+      <div><label>Quantidade</label><input id="qtd" type="number" min="0" step="1" value="1"></div>
+      <div><label>Desconto (R$)</label><input id="desc" type="number" min="0" step="0.01" value="0"></div>
+      <button class="btn" id="addI">Adicionar</button>
+    </div>
+    <div id="msg" class="bad" style="min-height:20px;margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <h2>Itens da venda</h2>
+    <div class="tw"><table><thead><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Preço</th><th class="n">Subtotal</th><th></th></tr></thead><tbody id="cart"></tbody></table></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px"><span class="mut" id="pts"></span><span class="tot" id="total">R$ 0,00</span></div>
+    <h2 style="margin-top:12px">Pagamento</h2>
+    <div class="row" style="grid-template-columns:1fr 1fr auto;align-items:end">
+      <div><label>Forma</label><select id="forma"></select></div>
+      <div><label>Valor (R$)</label><input id="pval" type="number" min="0" step="0.01"></div>
+      <button class="btn sec" id="addP">Adicionar</button>
+    </div>
+    <div id="pays" style="margin-top:6px"></div>
+    <button class="btn" id="fin" disabled>Finalizar venda</button>
+  </div>
+</div></section>
+
+<section class="tab" id="t-estoque"><div class="card"><h2>Produtos e estoque</h2>
+  <p class="sub" style="margin-bottom:8px">O estoque baixa sozinho a cada item vendido (trigger trg_itens_venda_ai).</p>
+  <div class="tw"><table><thead><tr><th>Produto</th><th>Categoria</th><th class="n">Preço</th><th class="n">Estoque</th><th class="n">Mínimo</th><th>Situação</th></tr></thead><tbody id="est"></tbody></table></div></div></section>
+
+<section class="tab" id="t-vendas"><div class="card"><h2>Histórico de vendas</h2>
+  <div class="tw"><table><thead><tr><th>#</th><th>Data</th><th>Caixa</th><th>Operador</th><th>Cliente</th><th>Pagamento</th><th class="n">Total</th><th class="n">Pontos</th><th>Status</th><th></th></tr></thead><tbody id="ven"></tbody></table></div>
+  <p class="sub" style="margin-top:8px">Vendas canceladas não são apagadas: ficam com status, data e responsável.</p></div></section>
+
+<section class="tab" id="t-clientes"><div class="kpi" id="cl"></div></section>
+
+<div class="card"><h2>SQL executado no banco</h2><pre id="log"></pre></div>
+</div>
+<div id="toast"></div>
+<script>
+const money=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const r2=v=>Math.round((v+Number.EPSILON)*100)/100, r3=v=>Math.round((v+Number.EPSILON)*1000)/1000;
+const pad=n=>String(n).padStart(2,'0');
+const agora=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const KEY='supermercado_db_v1';
+let db,LOG=[],silent=false;
+const L=s=>{if(!silent)LOG.push(s)};
+
+function fresh(){
+  db={categorias:{1:'Mercearia',2:'Hortifrúti',3:'Bebidas',4:'Limpeza',5:'Laticínios'},
+    produtos:[
+      {id:1,nome:'Arroz Tipo 1 5kg',cat:1,un:'UN',preco:24.90,qtd:120,min:20},
+      {id:2,nome:'Feijão Carioca 1kg',cat:1,un:'UN',preco:8.99,qtd:200,min:30},
+      {id:3,nome:'Leite Integral 1L',cat:5,un:'UN',preco:5.49,qtd:300,min:50},
+      {id:4,nome:'Banana Prata (kg)',cat:2,un:'KG',preco:5.99,qtd:80,min:10},
+      {id:5,nome:'Refrigerante Cola 2L',cat:3,un:'UN',preco:9.49,qtd:150,min:24},
+      {id:6,nome:'Detergente 500ml',cat:4,un:'UN',preco:2.99,qtd:180,min:30}],
+    clientes:[{id:1,nome:'Ana Paula Ferreira',cpf:'52998224725',pontos:0},{id:2,nome:'João Pedro Santos',cpf:'11144477735',pontos:0}],
+    colabs:[{id:1,nome:'Maria Souza',cargo:'OPERADOR_CAIXA'},{id:2,nome:'Carlos Lima',cargo:'GERENTE'}],
+    formas:[{id:1,nome:'Dinheiro'},{id:2,nome:'Cartão de Débito'},{id:3,nome:'Cartão de Crédito'},{id:4,nome:'Pix'},{id:5,nome:'Vale-Alimentação'}],
+    vendas:[],itens:[],pags:[],seq:{venda:0,item:0,pag:0}};
+  silent=true;
+  registrar({caixa:2,col:1,cli:1,data:'2026-09-28 10:15:00',itens:[[1,1,0],[2,2,0],[3,3,0],[4,2,0]],pags:[[1,30],[4,41.33]]});
+  registrar({caixa:2,col:1,cli:2,data:'2026-09-28 11:40:00',itens:[[5,2,0],[6,3,0]],pags:[[3,27.95]]});
+  registrar({caixa:1,col:1,cli:null,data:'2026-09-29 18:05:00',itens:[[3,2,0],[1,1,2]],pags:[[2,33.88]]});
+  registrar({caixa:3,col:1,cli:1,data:'2026-10-01 09:30:00',itens:[[3,4,0],[4,1,0]],pags:[[4,27.95]]});
+  silent=false;LOG=['-- Banco iniciado com os dados de exemplo do script.'];
+}
+
+// Replica o que os triggers do MySQL fazem ao inserir a venda
+function registrar(v){
+  const id=++db.seq.venda,ven={id,data:v.data||agora(),caixa:v.caixa,cli:v.cli,col:v.col,total:0,pontos:0,status:'CONCLUIDA',cancData:null,cancCol:null};
+  db.vendas.push(ven);
+  L(`INSERT INTO tbl_vendas (id_venda, data_hora, num_caixa, id_cliente, id_colaborador)\n  VALUES (${id}, '${ven.data}', ${v.caixa}, ${v.cli==null?'NULL':v.cli}, ${v.col});`);
+  v.itens.forEach(([pid,q,d])=>{
+    const p=db.produtos.find(x=>x.id===pid),sub=r2(q*p.preco-d);
+    db.itens.push({id:++db.seq.item,venda:id,prod:pid,qtd:q,preco:p.preco,desc:d,sub});
+    L(`INSERT INTO tbl_itens_venda (id_venda, id_produto, quantidade, preco_unitario, desconto)\n  VALUES (${id}, ${pid}, ${q}, ${p.preco.toFixed(2)}, ${d.toFixed(2)});`);
+    p.qtd=r3(p.qtd-q);
+    L(`-- trigger trg_itens_venda_ai\nUPDATE tbl_produtos SET qtd_estoque = qtd_estoque - ${q} WHERE id_produto = ${pid};  -- estoque agora: ${p.qtd}`);
+    const antes=ven.pontos;ven.total=r2(ven.total+sub);ven.pontos=Math.floor(ven.total);
+    L(`UPDATE tbl_vendas SET valor_total = ${ven.total.toFixed(2)}, pontos_gerados = ${ven.pontos} WHERE id_venda = ${id};`);
+    if(v.cli!=null&&ven.pontos!==antes){
+      const c=db.clientes.find(x=>x.id===v.cli);c.pontos+=ven.pontos-antes;
+      L(`-- trigger trg_vendas_au\nUPDATE tbl_clientes SET pontos_fidelidade = pontos_fidelidade + ${ven.pontos-antes} WHERE id_cliente = ${v.cli};  -- saldo: ${c.pontos}`);
+    }
+  });
+  v.pags.forEach(([f,val])=>{
+    db.pags.push({id:++db.seq.pag,venda:id,forma:f,valor:val});
+    L(`INSERT INTO tbl_pagamentos_venda (id_venda, id_forma_pagamento, valor) VALUES (${id}, ${f}, ${val.toFixed(2)});`);
+  });
+  return ven;
+}
+function cancelar(id){
+  const v=db.vendas.find(x=>x.id===id);if(!v||v.status==='CANCELADA')return;
+  v.status='CANCELADA';v.cancData=agora();v.cancCol=2;
+  L(`UPDATE tbl_vendas SET status = 'CANCELADA', data_cancelamento = '${v.cancData}', id_colab_cancel = 2 WHERE id_venda = ${id};`);
+}
+function stats(cid){
+  const vs=db.vendas.filter(v=>v.cli===cid&&v.status==='CONCLUIDA');
+  const ids=new Set(vs.map(v=>v.id)),porProd={};
+  db.itens.filter(i=>ids.has(i.venda)).forEach(i=>porProd[i.prod]=(porProd[i.prod]||0)+i.qtd);
+  const fav=Object.entries(porProd).sort((a,b)=>b[1]-a[1])[0];
+  const ult=vs.map(v=>v.data).sort().pop();
+  const dias=ult?Math.floor((Date.now()-new Date(ult.replace(' ','T')).getTime())/864e5):null;
+  return{n:vs.length,ticket:vs.length?r2(vs.reduce((s,v)=>s+v.total,0)/vs.length):0,fav:fav?db.produtos.find(p=>p.id==fav[0]):null,ult,dias};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({db,LOG}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.db){db=s.db;LOG=s.LOG;return true}}catch(e){}return false}
+/*UI*/
+const $=s=>document.querySelector(s);
+let cart=[],pays=[];
+const fmtD=d=>d?`${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(0,4)} ${d.slice(11,16)}`:'';
+const cpf=c=>c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+const nomeF=id=>db.formas.find(f=>f.id===id).nome;
+const total=()=>r2(cart.reduce((s,i)=>s+i.sub,0));
+const pago=()=>r2(pays.reduce((s,p)=>s+p.valor,0));
+
+function fillSelects(){
+  $('#caixa').innerHTML=[1,2,3,4,5,6].map(n=>`<option>${n}</option>`).join('');
+  $('#col').innerHTML=db.colabs.filter(c=>c.cargo==='OPERADOR_CAIXA').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  $('#cli').innerHTML='<option value="">Não identificado</option>'+db.clientes.map(c=>`<option value="${c.id}">${c.nome} · ${cpf(c.cpf)}</option>`).join('');
+  $('#forma').innerHTML=db.formas.map(f=>`<option value="${f.id}">${f.nome}</option>`).join('');
+  $('#prod').innerHTML=db.produtos.map(p=>`<option value="${p.id}">${p.nome} · ${money(p.preco)} · estoque ${p.qtd}</option>`).join('');
+  setStep();
+}
+function setStep(){const p=db.produtos.find(x=>x.id==$('#prod').value);$('#qtd').step=p&&p.un==='KG'?'0.001':'1';}
+function rCart(){
+  $('#cart').innerHTML=cart.length?cart.map((i,k)=>`<tr><td>${i.nome}${i.desc?` <span class="mut">(−${money(i.desc)})</span>`:''}</td><td class="n">${i.qtd}</td><td class="n">${money(i.preco)}</td><td class="n">${money(i.sub)}</td><td><button class="x" data-rm="${k}" title="Remover">✕</button></td></tr>`).join(''):'<tr><td colspan="5" class="mut">Nenhum item adicionado.</td></tr>';
+  const t=total(),c=db.clientes.find(x=>x.id==$('#cli').value);
+  $('#total').textContent=money(t);
+  $('#pts').textContent=c&&t?`+${Math.floor(t)} pontos para ${c.nome.split(' ')[0]}`:'';
+  const falta=r2(t-pago());
+  $('#pays').innerHTML=pays.map((p,k)=>`<div style="display:flex;justify-content:space-between"><span>${nomeF(p.forma)}</span><span>${money(p.valor)} <button class="x" data-rp="${k}" title="Remover">✕</button></span></div>`).join('')+(t?`<div class="${falta===0?'ok':'warn'}" style="margin-top:4px">${falta>0?`Falta pagar ${money(falta)}`:falta<0?`Pagamento excede em ${money(-falta)}`:'Pagamento completo ✓'}</div>`:'');
+  $('#pval').value=falta>0?falta.toFixed(2):'';
+  $('#fin').disabled=!(cart.length&&t>0&&falta===0);
+}
+function rEstoque(){
+  $('#est').innerHTML=db.produtos.map(p=>{const b=p.qtd<=p.min;return`<tr><td>${p.nome}</td><td>${db.categorias[p.cat]}</td><td class="n">${money(p.preco)}</td><td class="n"><b>${p.qtd}</b></td><td class="n">${p.min}</td><td><span class="tag ${b?'bad':'ok'}">${b?'Repor estoque':'Normal'}</span></td></tr>`}).join('');
+}
+function rVendas(){
+  $('#ven').innerHTML=db.vendas.slice().reverse().map(v=>{
+    const cl=v.cli==null?'<span class="mut">não identificado</span>':db.clientes.find(c=>c.id===v.cli).nome;
+    const fp=db.pags.filter(p=>p.venda===v.id).map(p=>nomeF(p.forma)).join(' + ');
+    return`<tr><td>${v.id}</td><td>${fmtD(v.data)}</td><td>${v.caixa}</td><td>${db.colabs.find(c=>c.id===v.col).nome}</td><td>${cl}</td><td>${fp}</td><td class="n">${money(v.total)}</td><td class="n">${v.pontos}</td><td><span class="tag ${v.status==='CANCELADA'?'bad':'ok'}">${v.status==='CANCELADA'?'Cancelada':'Concluída'}</span></td><td>${v.status==='CONCLUIDA'?`<button class="btn sec" style="margin:0;padding:3px 10px" data-cn="${v.id}">Cancelar</button>`:''}</td></tr>`}).join('');
+}
+function rClientes(){
+  $('#cl').innerHTML=db.clientes.map(c=>{const s=stats(c.id);
+    const inat=s.dias!==null&&s.dias>60;
+    return`<div class="card"><h2>${c.nome}</h2><div class="mut">CPF ${cpf(c.cpf)}</div>
+    <div class="tot" style="margin:6px 0">${c.pontos} <span style="font-size:13px;font-weight:400" class="mut">pontos</span></div>
+    <div>Compras: <b>${s.n}</b> · Ticket médio: <b>${money(s.ticket)}</b></div>
+    <div>Última compra: ${s.ult?fmtD(s.ult):'—'}${inat?` <span class="tag bad">inativo há ${s.dias} dias</span>`:''}</div>
+    <div style="margin-top:8px;padding:8px;border-radius:8px;background:var(--sel)">${s.fav?`💡 Produto mais comprado: <b>${s.fav.nome}</b>. Sugestão: enviar oferta desse item.`:'Sem compras ainda.'}</div></div>`}).join('');
+}
+function rLog(){const p=$('#log');p.textContent=LOG.join('\n');p.scrollTop=p.scrollHeight}
+function renderAll(){rCart();rEstoque();rVendas();rClientes();rLog();fillSelectsKeep();save()}
+function fillSelectsKeep(){const v=$('#prod').value;$('#prod').innerHTML=db.produtos.map(p=>`<option value="${p.id}">${p.nome} · ${money(p.preco)} · estoque ${p.qtd}</option>`).join('');if(v)$('#prod').value=v;}
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display='none',3800)}
+function tab(t){document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+t));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
+
+$('#nav').onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)};
+$('#prod').onchange=setStep;$('#cli').onchange=rCart;
+$('#addI').onclick=()=>{
+  const p=db.produtos.find(x=>x.id==$('#prod').value),q=r3(parseFloat($('#qtd').value)),d=r2(parseFloat($('#desc').value)||0),m=$('#msg');m.textContent='';
+  if(!(q>0))return m.textContent='Informe uma quantidade maior que zero.';
+  const ja=cart.find(i=>i.prod===p.id),novaQ=r3(q+(ja?ja.qtd:0)),novoD=r2(d+(ja?ja.desc:0));
+  if(novaQ>p.qtd)return m.textContent=`Estoque insuficiente: há ${p.qtd} em estoque.`;
+  if(novoD>r2(novaQ*p.preco))return m.textContent='O desconto não pode passar do valor do item.';
+  const it={prod:p.id,nome:p.nome,qtd:novaQ,preco:p.preco,desc:novoD,sub:r2(novaQ*p.preco-novoD)};
+  if(ja)Object.assign(ja,it);else cart.push(it);
+  pays=[];$('#qtd').value=p.un==='KG'?'1':'1';$('#desc').value='0';rCart();
+};
+$('#addP').onclick=()=>{const v=r2(parseFloat($('#pval').value)),m=$('#msg');m.textContent='';
+  if(!(v>0))return m.textContent='Informe o valor do pagamento.';
+  if(v>r2(total()-pago()))return m.textContent='O valor passa do que falta pagar.';
+  pays.push({forma:+$('#forma').value,valor:v});rCart()};
+$('#cart').onclick=e=>{if(e.target.dataset.rm!==undefined){cart.splice(+e.target.dataset.rm,1);pays=[];rCart()}};
+$('#pays').onclick=e=>{if(e.target.dataset.rp!==undefined){pays.splice(+e.target.dataset.rp,1);rCart()}};
+$('#fin').onclick=()=>{
+  const cli=$('#cli').value?+$('#cli').value:null;
+  const v=registrar({caixa:+$('#caixa').value,col:+$('#col').value,cli,itens:cart.map(i=>[i.prod,i.qtd,i.desc]),pags:pays.map(p=>[p.forma,p.valor])});
+  cart=[];pays=[];renderAll();
+  toast(`Venda #${v.id} registrada: ${money(v.total)}${cli?` · +${v.pontos} pontos`:''} · estoque atualizado`);
+};
+$('#ven').onclick=e=>{if(e.target.dataset.cn){cancelar(+e.target.dataset.cn);renderAll();toast('Venda cancelada e mantida no histórico.')}};
+$('#reset').onclick=()=>{cart=[];pays=[];fresh();fillSelects();renderAll();toast('Dados de exemplo restaurados.')};
+
+if(!load())fresh();
+fillSelects();renderAll();
+</script>
+</body>
+</html>
